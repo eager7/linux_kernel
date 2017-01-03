@@ -74,10 +74,10 @@ static int __init reversion_init(void)
 		return ret;
 	}
 	pcdev_reversion = cdev_alloc();	//inode 结构的一个结构体，在内核内部表示设备
-	//cdev_init(pcdev_reversion, &file_ops);
 	pcdev_reversion->owner = THIS_MODULE;
 	pcdev_reversion->ops = &file_ops;
-	cdev_add(pcdev_reversion, dev, number_reversion);
+	
+    cdev_add(pcdev_reversion, dev, number_reversion);
 	
 	return 0;
 }
