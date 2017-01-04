@@ -32,6 +32,7 @@ ssize_t write_reversion(struct file *filp, const char __user *buf, size_t count,
 ssize_t read_reversion(struct file *filp, char __user *buf, size_t count, loff_t *ppos);
 static int open_reversion(struct inode *inode, struct file *filp);
 long ioctl_reversion(struct file *filp, unsigned int cmd, unsigned long arg);
+static int revert_string(char *str);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -53,6 +54,7 @@ static struct file_operations file_ops = {
 	.unlocked_ioctl 	= ioctl_reversion
 };
 struct cdev *pcdev_reversion;
+char auBuffer[1024];
 /****************************************************************************/
 /***        Local    Functions                                            ***/
 /****************************************************************************/
@@ -97,11 +99,14 @@ ssize_t write_reversion(struct file *filp, const char __user *buf, size_t count,
         return EFAULT;
     }
     printk(KERN_DEBUG "reversion:get data form user space:%s\n", auBuf);
+    memcpy(auBuffer, auBuf, count);
+    revert_string(auBuffer);
 	return 0;
 }
 ssize_t read_reversion(struct file *filp, char __user *buf, size_t count, loff_t *ppos)
 {
-    if(copy_to_user(buf, "kernel", sizeof("kernel"))){
+    printk(KERN_DEBUG "user read data\n");
+    if(copy_to_user(buf, auBuffer, count)){
         printk(KERN_ERR "reversion:can't set date to user space\n");
         return EFAULT;
     }
@@ -114,6 +119,16 @@ static int open_reversion(struct inode *inode, struct file *filp)
 long ioctl_reversion(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	return 0;
+}
+static int revert_string(char *str){
+    int len = strlen(str);
+    int i = 0; char temp = 0; int n = len/2;
+    for(i = 0; i < n; i++){
+        temp = str[len-1-i];
+        str[len-1-i] = str[i];
+        str[i] = temp;
+    }
+    return 0;
 }
 module_init(reversion_init);
 module_exit(reversion_exit);
