@@ -28,8 +28,8 @@ MODULE_DESCRIPTION("This Module used to reversion a str");
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
-static int write_reversion(struct file *filp, const char __user *buf, size_t size, loff_t *ppos);
-static int read_reversion(struct file *filp, char __user *buf, size_t size, loff_t *ppos);
+ssize_t write_reversion(struct file *filp, const char __user *buf, size_t count, loff_t *ppos);
+ssize_t read_reversion(struct file *filp, char __user *buf, size_t count, loff_t *ppos);
 static int open_reversion(struct inode *inode, struct file *filp);
 long ioctl_reversion(struct file *filp, unsigned int cmd, unsigned long arg);
 /****************************************************************************/
@@ -89,12 +89,22 @@ static void reversion_exit(void)
 	unregister_chrdev_region(MKDEV(major_reversion, minor_reversion), number_reversion);//unregion device
 }
 
-static int write_reversion(struct file *filp, const char __user *buf, size_t size, loff_t *ppos)
+ssize_t write_reversion(struct file *filp, const char __user *buf, size_t count, loff_t *ppos)
 {
+    char auBuf[128] = {0};
+    if(copy_from_user(auBuf, buf, count)){
+        printk(KERN_ERR "reversion:can't get date form user space\n");
+        return EFAULT;
+    }
+    printk(KERN_DEBUG "reversion:get data form user space:%s\n", auBuf);
 	return 0;
 }
-static int read_reversion(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
+ssize_t read_reversion(struct file *filp, char __user *buf, size_t count, loff_t *ppos)
 {
+    if(copy_to_user(buf, "kernel", sizeof("kernel"))){
+        printk(KERN_ERR "reversion:can't set date to user space\n");
+        return EFAULT;
+    }
 	return 0;
 }
 static int open_reversion(struct inode *inode, struct file *filp)
