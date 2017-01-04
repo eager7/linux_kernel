@@ -53,8 +53,9 @@ static struct file_operations file_ops = {
 	.read 				= read_reversion,
 	.unlocked_ioctl 	= ioctl_reversion
 };
-struct cdev *pcdev_reversion;
-char auBuffer[1024];
+static struct cdev *pcdev_reversion;
+static struct semaphore sem;
+static char auBuffer[1024];
 /****************************************************************************/
 /***        Local    Functions                                            ***/
 /****************************************************************************/
@@ -80,6 +81,7 @@ static int __init reversion_init(void)
 	pcdev_reversion->ops = &file_ops;
 	
     cdev_add(pcdev_reversion, dev, number_reversion);
+    sema_init(&sem, 1);
 	
 	return 0;
 }
@@ -99,17 +101,26 @@ ssize_t write_reversion(struct file *filp, const char __user *buf, size_t count,
         return EFAULT;
     }
     printk(KERN_DEBUG "reversion:get data form user space:%s\n", auBuf);
+    if(down_interruptible(&sem)){
+        return -ERESTARTSYS;
+    }
     memcpy(auBuffer, auBuf, count);
     revert_string(auBuffer);
-	return 0;
+	up(&sem);
+    return 0;
 }
 ssize_t read_reversion(struct file *filp, char __user *buf, size_t count, loff_t *ppos)
 {
     printk(KERN_DEBUG "user read data\n");
+    if(down_interruptible(&sem)){
+        return -ERESTARTSYS;
+    }
     if(copy_to_user(buf, auBuffer, count)){
         printk(KERN_ERR "reversion:can't set date to user space\n");
+        up(&sem);
         return EFAULT;
     }
+    up(&sem);
 	return 0;
 }
 static int open_reversion(struct inode *inode, struct file *filp)
